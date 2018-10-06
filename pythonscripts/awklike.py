@@ -1,27 +1,29 @@
 #!/usr/bin/python
 
-import sys
+import sys,collections
 
 file_=sys.argv[1]
 col=int(sys.argv[2])
 
-#f = sys.stdin
-# If you need to open a file instead:
 f = open(file_)
 ##### check how many column
 line_ = f.readline()
 colnum=len(line_.split())
-print colnum,"Columns"
-print ''
+
+with open(file_) as f:
+        counts=(sum(1 for _ in f))
+f.close()
+
+print ">",colnum," Columns"
+print ">",counts,"Lines"
 
 ##### print column
-for line in f:
+sys.stdout.write("> Print column : %s"%col);sys.stdout.flush();print '\r'
+for line in open(file_): 
     fields = line.strip().split()
     # Array indices start at 0 unlike AWK
     if col < colnum :
         print(fields[col])
     else :
-        exit()
-       # print "Nooo"
-
+        print "No Columns"; exit()
 f.close()
