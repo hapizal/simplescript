@@ -1,0 +1,201 @@
+#!/bin/sh
+###################################################
+# To inspect server informations                  #
+# created by Hapizal                              #
+# inspect v2			                  #
+###################################################
+##### Init ########################################
+option=$1
+tgl=$(date)
+Server=$(hostname)
+target=10.0.0.19
+
+#cp /etc/localtime /etc/localtime.bak`date +%Y%m%d`
+#rm -rf /etc/localtime
+#ln -s /usr/share/zoneinfo/Asia/Jakarta /etc/localtime
+
+/etc/init.d/ntp restart > /dev/null 2>&1
+ntpdate 10.0.0.50 > /dev/null 2>&1
+
+manu=$(dmidecode -t system | grep Manufactur | awk '{print $2}')
+totalmem=$(free -m | awk '{print $1 " "$2}' | egrep -v 'Swap|total|buffer' | awk '{print $2}')
+freemem=$(free -m | awk '{print $1 " "$2"  "$4}' | grep buffer | awk '{print $3}')
+
+
+###### Functions #######################################################################
+garis(){
+local len=80 ; local i;
+    	for (( i = 0; i < len + 4; ++i )); do printf '='; done; printf "\n"
+}
+
+spaces(){
+awk '{print "         "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8}'
+#awk '{print "         "$0} '
+}
+
+server(){
+echo "$Server Device Type Info :"
+dmidecode -t system | egrep 'Manu|Product|Serial' | egrep -v 'Not' | spaces; garis;
+}
+
+cpu(){
+echo "$Server CPU Info :"
+cat /proc/cpuinfo | grep 'model name' | head -1 | awk '{print "         "$4" "$5" "$6" "$7" "$8" "$9" "$10}'	
+lscpu | egrep 'Arc|CPU|ID' | egrep -v 'list|node' | spaces; garis;
+}
+
+os(){
+echo "$Server OS Info :"
+cat /etc/*release | egrep -v 'LSB|ID|COLOR|PRETTY|CPE' | spaces;
+echo "         Kernel:"
+
+	uname -r | spaces; garis;
+
+}
+
+disk(){
+echo "$Server Disks Info for $manu :"
+case $manu in
+	"ZTE")
+		sas2ircu 0 DISPLAY | egrep 'Serial No' | spaces;
+		echo " "
+		sas2ircu 0 DISPLAY | egrep 'Manu|Model' | spaces;
+		echo " "
+		sas2ircu 0 DISPLAY | egrep 'sectors|Manu|Model' | awk '{print "         "$1" "$2" "$3" "$4" "$5" "$6}'
+	;;
+	"Dell")
+		PATH=$PATH:/opt/MegaRAID/MegaCli/
+		MegaCli64 -PDList -aALL | egrep 'Inq' | awk '{print "         "$1" "$2" "$3" "$4" "$5" "$6" "$7}'
+		echo " " 
+		MegaCli64 -PDList -aALL | egrep 'Raw Size' | awk '{print "         "$1" "$2" "$3" "$4" "$5" "$6" "$7}'
+	;;
+	"HP")
+		#hpacucli ctrl slot=0 pd all show detail | egrep 'Size|Serial|Model' | spaces;
+		hpssacli ctrl slot=0 pd all show detail | egrep 'Serial' | spaces;
+                echo " "
+                hpssacli ctrl slot=0 pd all show detail | egrep 'Size|Model' | spaces;
+
+	;;
+	"IBM")
+		PATH=$PATH:/opt/MegaRAID/MegaCli/
+                MegaCli64 -PDList -aALL | egrep 'Inq|Raw Size' | awk '{print "         "$1" "$2" "$3" "$4" "$5" "$6" "$7}'
+	;;
+
+	"VMware,") echo "Cannot Defined";;
+esac
+	echo " "
+        echo "Storage Capacity Status:"
+        df -h
+        echo " "
+        echo "SAS Devices :"
+        lsscsi
+garis;
+}
+
+mem(){
+echo "$Server Memory Info"
+echo " "
+totalmem=$(free -m | awk '{print $1 " "$2}' | egrep -v 'Swap|total|buffer' | awk '{print $2}')	
+freemem=$(free -m | awk '{print $1 " "$2"  "$4}' | grep buffer | awk '{print $3}')
+	
+	echo "Total Memory = "$totalmem 
+	echo "Free Memory  = "$freemem
+	dmidecode -t memory | egrep 'Serial' | egrep -v ':         |Unknown|Not|No|Channel' | awk '{print "         "$1" "$2" "$3" "$4" "$5" "$6" "$7}'
+	echo " "
+	dmidecode -t memory | egrep 'Size|Speed|Manu' | egrep -v ':       |Unknown|Not|No|Channel' | awk '{print "         "$1" "$2" "$3" "$4" "$5" "$6" "$7}'
+garis;
+}
+
+net(){
+echo "$Server Network Port Status"
+checknet=$(ls /proc/net | grep bonding)
+case $checknet in
+	"bonding")
+echo "Interfaces Info :"
+	ifconfig | egrep 'HW|inet addr|lo'
+echo " "
+echo "Network Card Teaming :"
+	ls -l /proc/net/bonding/ | grep -v total | awk '{print $8}' |spaces;
+
+	bonding=$(ls -l /proc/net/bonding/ |grep -v total |  awk '{print $8}')
+	echo "Network Teaming Info : "$bonding
+	cat /proc/net/bonding/bond* | egrep 'Current' | egrep -v Driver | spaces | head -1
+	echo " "
+	cat /proc/net/bonding/bond* | egrep 'Interface|addr|Speed' | egrep -v Driver | spaces;
+	;;
+	"") 
+	echo "No bonding found" | spaces;
+	iface=$(ifconfig | grep Link | head -1 | awk '{print $1}')
+	ip=$(ifconfig | grep inet | head -1 | awk '{print $2}')
+	echo "Interface active is $iface" | spaces;
+	echo "Possessing IP $ip" | spaces; 
+	ethtool $iface | egrep 'Link|Speed' | spaces;
+	;;
+esac
+echo " "
+	echo "Test ping to $target count 5"
+	ping -c 5  $target | spaces;
+garis;
+}
+
+ntpcheck(){
+echo "$Server NTP Integration"
+echo "Current Time: "$tgl 
+echo " "
+	#ntpdate 10.0.0.50 > /dev/null 2>&1
+	ntpq -pn; garis;
+}
+
+helper(){
+	echo " "
+	echo "Define what to inspect :"
+        echo "---------------------"
+	echo "  server"
+        echo "  cpu"
+        echo "  disk"
+        echo "  memory"
+        echo "  network"
+        echo "  ntp"
+        echo "  all"
+	echo " "
+        echo "Example : "
+	echo "inspect all <to get all information for inspection>"
+	echo " "
+}
+###### MAIN Function ####################################################################
+garis;
+	echo " "
+	echo " Inspect Server $Server  $tgl"
+	echo " "
+garis;
+### Server
+case $option in
+	"server") server;;
+### CPU
+	"cpu") cpu;;
+### OS
+	"os") os;;
+### Disks
+	"disk") disk;;
+### Memory
+	"memory") mem;;
+### Network	
+	"network") net;;
+### Date
+	"ntp") ntpcheck;;
+#Help part
+	"") helper;;
+	" ") helper;;
+#all part
+	"all")
+	server;
+	cpu;
+	os;
+	disk;
+	mem;
+	net;
+	ntpcheck;
+	;;	
+esac
+
+

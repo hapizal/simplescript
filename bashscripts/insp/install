@@ -1,0 +1,9 @@
+#!/bin/sh
+cp inspect* /usr/bin/inspect
+
+cp /etc/localtime /etc/localtime.bak`date +%Y%m%d`
+rm -rf /etc/localtime
+#ln -s /usr/share/zoneinfo/Asia/Jakarta /etc/localtime
+cp src/localtime /etc/localtime
+
+/etc/init.d/ntp start > /dev/null 2>&1
