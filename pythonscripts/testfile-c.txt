@@ -1,0 +1,5 @@
+satu 1 satu1 satu2
+dua 2 dua1 dua2
+tiga 3 tiga1 tiga2
+empat 4 empat1 empat2
+lima 5 lima1 lima2
