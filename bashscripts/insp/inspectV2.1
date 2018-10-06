@@ -8,7 +8,7 @@
 option=$1
 tgl=$(date)
 Server=$(hostname)
-target=10.0.0.19
+target=<ip target ping>
 
 #cp /etc/localtime /etc/localtime.bak`date +%Y%m%d`
 #rm -rf /etc/localtime
@@ -146,7 +146,7 @@ echo " "
 	ntpq -pn; garis;
 }
 
-helper(){
+helper(){##
 	echo " "
 	echo "Define what to inspect :"
         echo "---------------------"
