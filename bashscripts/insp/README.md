@@ -1,7 +1,11 @@
 # Inspect Server Resources
 
 Notes :\
-This scripts is intended to check resources during the acceptance test with customer\
+This script is intended to check resources during the acceptance test with customer\
+
+why not using python?\
+Answer : \
+bash script is on the go script, do not care about any modules
 
 What to check :\
 - CPU\
