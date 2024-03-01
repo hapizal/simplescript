@@ -1,1 +1,1 @@
-# simplescript
+# Collection of simple scripts
