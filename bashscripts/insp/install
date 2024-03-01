@@ -1,9 +1,17 @@
 #!/bin/sh
+
+## copy inspect script to /usr/bin
 cp inspect* /usr/bin/inspect
 
+## Modify timezone to west indonesian time
 cp /etc/localtime /etc/localtime.bak`date +%Y%m%d`
 rm -rf /etc/localtime
+
+## this one is using default timezone setting in OS
 #ln -s /usr/share/zoneinfo/Asia/Jakarta /etc/localtime
+
+## this one ise using little bit modified timezone naming
 cp src/localtime /etc/localtime
 
+## starting ntp service
 /etc/init.d/ntp start > /dev/null 2>&1
